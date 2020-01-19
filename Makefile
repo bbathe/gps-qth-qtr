@@ -13,16 +13,16 @@ codetest: lint vet test
 build: codetest
 	mkdir -p target
 	rm -f target/*
-	GOOS=windows GOARCH=amd64 go build -v -o target/$(package)
+	GOOS=windows GOARCH=amd64 go build -v -o target/$(package).exe
 
 test:
-	go test -v -cover
-
+	GOOS=windows GOARCH=amd64 go test -v -cover
+	
 fmt:
-	go fmt ./...
+	GOOS=windows GOARCH=amd64 go fmt ./...
 
 lint:
-	golangci-lint run --fix
+	GOOS=windows GOARCH=amd64 golangci-lint run --fix
 	
 vet:
-	go vet -all .
+	GOOS=windows GOARCH=amd64 go vet -all .
