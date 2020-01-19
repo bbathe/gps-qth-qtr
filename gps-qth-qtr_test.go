@@ -27,14 +27,16 @@ func Test_parseRMCTime(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseRMCTime(tt.args.fields)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseRMCTime() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := parseRMCTime(ttt.args.fields)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("parseRMCTime() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseRMCTime() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("parseRMCTime() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -82,14 +84,16 @@ func Test_parseDegMinToFloat(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseDegMinToFloat(tt.args.dm)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseDegMinToFloat() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := parseDegMinToFloat(ttt.args.dm)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("parseDegMinToFloat() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("parseDegMinToFloat() = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("parseDegMinToFloat() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -192,14 +196,16 @@ func Test_latLonToGridsquare(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := latLonToGridsquare(tt.args.lat, tt.args.lon)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("latLonToGridsquare() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := latLonToGridsquare(ttt.args.lat, ttt.args.lon)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("latLonToGridsquare() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("latLonToGridsquare() = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("latLonToGridsquare() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -241,14 +247,16 @@ func Test_parseRMCLocation(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseRMCLocation(tt.args.fields)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseRMCLocation() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := parseRMCLocation(ttt.args.fields)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("parseRMCLocation() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("parseRMCLocation() = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("parseRMCLocation() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -295,17 +303,19 @@ func Test_parseRMC(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := parseRMC(tt.args.s)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseRMC() error = %v, wantErr %v", err, tt.wantErr)
+			got, got1, err := parseRMC(ttt.args.s)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("parseRMC() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseRMC() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("parseRMC() got = %v, want %v", got, ttt.want)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("parseRMC() got1 = %v, want %v", got1, tt.want1)
+			if got1 != ttt.want1 {
+				t.Errorf("parseRMC() got1 = %v, want %v", got1, ttt.want1)
 			}
 		})
 	}
