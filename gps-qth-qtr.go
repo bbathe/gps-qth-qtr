@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -73,12 +72,15 @@ func gatherGpsData() {
 	p, err := serial.OpenPort(config)
 	if err != nil {
 		log.Printf("%+v", err)
+		return
 	}
+	defer p.Close()
 
 	for {
 		s, err := readLineFromPort(p, '$')
 		if err != nil {
 			log.Printf("%+v", err)
+			continue
 		}
 
 		if len(s) > 5 {
@@ -105,24 +107,21 @@ func gatherGpsData() {
 	}
 }
 
-func testOutput() {
-	for {
-		time.Sleep(time.Second * 3)
-
-		t := gpsdata.getTime()
-		l := gpsdata.getLocation()
-		fmt.Printf("%+v | %+v\n", t, l)
-	}
-}
-
 func main() {
 	// show file & location, date & time
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
+	// log to file
+	f, err := os.OpenFile("gps-qth-qtr.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	// command line app
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "\nUsage of %s\n", os.Args[0])
-		flag.PrintDefaults()
+		log.Printf("invalid command line")
 	}
 
 	// get config file from command line
@@ -146,21 +145,9 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
-	//	concurrent processes
-	var wg sync.WaitGroup
+	// concurrent
+	go gatherGpsData()
 
-	funcs := []func(){
-		gatherGpsData,
-		testOutput,
-	}
-
-	for _, f := range funcs {
-		wg.Add(1)
-
-		go func(fn func()) {
-			defer wg.Done()
-			fn()
-		}(f)
-	}
-	wg.Wait()
+	// returns on exit
+	systemTray()
 }

@@ -16,3 +16,9 @@
 
 # Build target directory
 target/
+
+# log files
+*.log
+
+# intermediate build files
+*syso
