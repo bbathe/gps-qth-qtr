@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -22,6 +23,7 @@ type configuration struct {
 
 // gpsData is a structure to control concurrent access to the data from the gps device
 type gpsData struct {
+	s   string
 	tm  time.Time
 	loc string
 	mu  sync.RWMutex
@@ -34,6 +36,20 @@ var (
 	// last data from gps device
 	gpsdata gpsData
 )
+
+func (g *gpsData) getStatus() string {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.s
+}
+
+func (g *gpsData) setStatus(s string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.s = s
+}
 
 func (g *gpsData) getTime() time.Time {
 	g.mu.RLock()
@@ -63,6 +79,8 @@ func (g *gpsData) setLocation(l string) {
 	g.loc = l
 }
 
+// gatherGpsData reads from gps port until a **RMC line is successfully processed
+// system time is updated
 func gatherGpsData() {
 	config := &serial.Config{
 		Name: config.GPSDevice.Port,
@@ -99,9 +117,10 @@ func gatherGpsData() {
 				// update system time
 				err = setSystemTime(t)
 				if err != nil {
-					log.Printf("%+v", err)
-					continue
+					gpsdata.setStatus(fmt.Sprintf("error setting time: %+v", err))
 				}
+
+				return
 			}
 		}
 	}
@@ -145,8 +164,17 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
-	// concurrent
-	go gatherGpsData()
+	// prime data
+	q1 := scheduleOnce(func() {
+		gatherGpsData()
+	}, 0)
+	defer close(q1)
+
+	// and create recurring task
+	q2 := scheduleRecurring(func() {
+		gatherGpsData()
+	}, 300*time.Second)
+	defer close(q2)
 
 	// returns on exit
 	systemTray()
