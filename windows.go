@@ -69,7 +69,11 @@ func systemTray() {
 	}()
 
 	// set the icon and a tool tip text
-	if err := ni.SetIcon(walk.IconApplication()); err != nil {
+	icon, err := walk.Resources.Icon("3")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := ni.SetIcon(icon); err != nil {
 		log.Fatal(err)
 	}
 	if err := ni.SetToolTip("gps-qth-qtr"); err != nil {

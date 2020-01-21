@@ -14,7 +14,7 @@ codetest: lint vet test
 build: codetest
 	mkdir -p target
 	rm -f target/*
-	rsrc -manifest gps-qth-qtr.manifest -o gps-qth-qtr.syso
+	rsrc -manifest gps-qth-qtr.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go build -v -ldflags -H=windowsgui -o target/$(package).exe
 
 run: build
