@@ -17,10 +17,6 @@ build: codetest
 	rsrc -manifest gps-qth-qtr.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go build -v -ldflags -H=windowsgui -o target/$(package).exe
 
-run: build
-	>gps-qth-qtr.log
-	target/gps-qth-qtr.exe -config gps-qth-qtr.yaml
-
 test:
 	rsrc -manifest gps-qth-qtr_test.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go test

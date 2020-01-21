@@ -177,5 +177,8 @@ func main() {
 	defer close(q2)
 
 	// returns on exit
-	systemTray()
+	err = systemTray()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
 }

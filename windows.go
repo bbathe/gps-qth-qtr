@@ -49,41 +49,50 @@ func init() {
 	}
 }
 
-func systemTray() {
+func systemTray() error {
 	// our window
 	mw, err := walk.NewMainWindow()
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// create the notify icon and make sure we clean it up on exit
 	ni, err := walk.NewNotifyIcon(mw)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%+v", err)
+		return err
 	}
 	defer func() {
 		err := ni.Dispose()
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("%+v", err)
 		}
 	}()
 
 	// set the icon and a tool tip text
 	icon, err := walk.Resources.Icon("3")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("%+v", err)
+		return err
 	}
-	if err := ni.SetIcon(icon); err != nil {
-		log.Fatal(err)
+	err = ni.SetIcon(icon)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
-	if err := ni.SetToolTip("gps-qth-qtr"); err != nil {
-		log.Fatal(err)
+	err = ni.SetToolTip("gps-qth-qtr")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// gridsquare action in context menu
 	gridsquareAction := walk.NewAction()
-	if err := gridsquareAction.SetText("Gridsquare"); err != nil {
-		log.Fatal(err)
+	err = gridsquareAction.SetText("Gridsquare")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 	gridsquareAction.Triggered().Attach(func() {
 		err := walk.Clipboard().SetText(gpsdata.getLocation())
@@ -91,40 +100,54 @@ func systemTray() {
 			log.Printf("%+v", err)
 		}
 	})
-	if err := ni.ContextMenu().Actions().Add(gridsquareAction); err != nil {
-		log.Fatal(err)
+	err = ni.ContextMenu().Actions().Add(gridsquareAction)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// status action in context menu
 	statusAction := walk.NewAction()
-	if err := statusAction.SetText("Status"); err != nil {
-		log.Fatal(err)
+	err = statusAction.SetText("Status")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 	statusAction.Triggered().Attach(func() {
 		status := fmt.Sprintf("Message: %s\nGridsquare: %s\nTime: %v", gpsdata.getStatus(), gpsdata.getLocation(), gpsdata.getTime())
 		walk.MsgBox(mw, "Status", status, walk.MsgBoxIconInformation)
 	})
-	if err := ni.ContextMenu().Actions().Add(statusAction); err != nil {
-		log.Fatal(err)
+	err = ni.ContextMenu().Actions().Add(statusAction)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// exit action in context menu
 	exitAction := walk.NewAction()
-	if err := exitAction.SetText("Exit"); err != nil {
-		log.Fatal(err)
+	err = exitAction.SetText("Exit")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 	exitAction.Triggered().Attach(func() {
 		walk.App().Exit(0)
 	})
-	if err := ni.ContextMenu().Actions().Add(exitAction); err != nil {
-		log.Fatal(err)
+	err = ni.ContextMenu().Actions().Add(exitAction)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// make notify icon visible
-	if err := ni.SetVisible(true); err != nil {
-		log.Fatal(err)
+	err = ni.SetVisible(true)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
 	}
 
 	// message loop
 	mw.Run()
+
+	return nil
 }
