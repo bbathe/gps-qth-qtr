@@ -101,7 +101,7 @@ func systemTray() {
 		log.Fatal(err)
 	}
 	statusAction.Triggered().Attach(func() {
-		status := fmt.Sprintf("Gridsquare: %s\nTime: %v", gpsdata.getLocation(), gpsdata.getTime())
+		status := fmt.Sprintf("Message: %s\nGridsquare: %s\nTime: %v", gpsdata.getStatus(), gpsdata.getLocation(), gpsdata.getTime())
 		walk.MsgBox(mw, "Status", status, walk.MsgBoxIconInformation)
 	})
 	if err := ni.ContextMenu().Actions().Add(statusAction); err != nil {
