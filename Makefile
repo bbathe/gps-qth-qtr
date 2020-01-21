@@ -18,6 +18,7 @@ build: codetest
 	GOOS=windows GOARCH=amd64 go build -v -ldflags -H=windowsgui -o target/$(package).exe
 
 run: build
+	>gps-qth-qtr.log
 	target/gps-qth-qtr.exe -config gps-qth-qtr.yaml
 
 test:
