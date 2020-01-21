@@ -22,7 +22,9 @@ run: build
 	target/gps-qth-qtr.exe -config gps-qth-qtr.yaml
 
 test:
+	rsrc -manifest gps-qth-qtr_test.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go test
+	rm gps-qth-qtr.syso
 	
 fmt:
 	GOOS=windows GOARCH=amd64 go fmt ./...
