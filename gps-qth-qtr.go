@@ -15,8 +15,9 @@ import (
 // configuration holds the application configuration
 type configuration struct {
 	GPSDevice struct {
-		Port string
-		Baud int
+		Port     string
+		Baud     int
+		PollRate time.Duration
 	}
 }
 
@@ -50,8 +51,8 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 	}
 }
 
-// gatherGpsData reads from gps port until a **RMC line is successfully processed
-// system time is updated
+// gatherGpsData reads from gps port until **RMC & **GGA lines are successfully processed
+// system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
 func gatherGpsData() {
 	config := &serial.Config{
 		Name: config.GPSDevice.Port,
@@ -136,11 +137,12 @@ func main() {
 	// show file & location, date & time
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	ex, err := os.Executable()
+	// log & config files are in the same directory as the executable with the same base name
+	fn, err := os.Executable()
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
-	basefn := strings.TrimSuffix(ex, path.Ext(ex))
+	basefn := strings.TrimSuffix(fn, path.Ext(fn))
 
 	// log to file
 	f, err := os.OpenFile(basefn+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -171,7 +173,7 @@ func main() {
 	// and create recurring task
 	q2 := scheduleRecurring(func() {
 		gatherGpsData()
-	}, 10*time.Second)
+	}, config.GPSDevice.PollRate*time.Second)
 	defer close(q2)
 
 	// returns on exit
