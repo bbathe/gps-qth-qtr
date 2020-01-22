@@ -8,31 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/tarm/serial"
 )
-
-// readLineFromPort reads bytes from port and accumulates string until delim is met
-// does not return delim in string
-func readLineFromPort(p *serial.Port, delim byte) (string, error) {
-	var s string
-	buf := []byte{0}
-
-	for {
-		n, err := p.Read(buf)
-		if err != nil {
-			log.Printf("%+v", err)
-			return "", err
-		}
-
-		if n > 0 {
-			if buf[0] == delim {
-				return s, nil
-			}
-			s += string(buf[:n])
-		}
-	}
-}
 
 // parseRMCTime extracts the time from an **RMC line
 func parseRMCTime(fields []string) (time.Time, error) {

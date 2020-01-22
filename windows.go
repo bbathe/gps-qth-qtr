@@ -114,7 +114,15 @@ func systemTray() error {
 		return err
 	}
 	statusAction.Triggered().Attach(func() {
-		status := fmt.Sprintf("Message: %s\nGridsquare: %s\nTime: %v", gpsdata.getStatus(), gpsdata.getLocation(), gpsdata.getTime())
+		status := fmt.Sprintf(
+			"Message: %s\nGridsquare: %s\nTime: %v\nFix Quality: %s\nSatellites: %d",
+			gpsdata.getStatus(),
+			gpsdata.getLocation(),
+			gpsdata.getTime(),
+			gpsdata.getFixQuality(),
+			gpsdata.getNumSatellites(),
+		)
+
 		walk.MsgBox(mw, "Status", status, walk.MsgBoxIconInformation)
 	})
 	err = ni.ContextMenu().Actions().Add(statusAction)

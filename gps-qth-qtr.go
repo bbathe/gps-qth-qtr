@@ -26,6 +26,8 @@ type gpsData struct {
 	s   string
 	tm  time.Time
 	loc string
+	q   string
+	n   int
 	mu  sync.RWMutex
 }
 
@@ -79,6 +81,56 @@ func (g *gpsData) setLocation(l string) {
 	g.loc = l
 }
 
+func (g *gpsData) getFixQuality() string {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.q
+}
+
+func (g *gpsData) setFixQuality(q string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.q = q
+}
+
+func (g *gpsData) getNumSatellites() int {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.n
+}
+
+func (g *gpsData) setNumSatellites(n int) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.n = n
+}
+
+// readLineFromPort reads bytes from port and accumulates string until delim is met
+// does not return delim in string
+func readLineFromPort(p *serial.Port, delim byte) (string, error) {
+	var s string
+	buf := []byte{0}
+
+	for {
+		n, err := p.Read(buf)
+		if err != nil {
+			log.Printf("%+v", err)
+			return "", err
+		}
+
+		if n > 0 {
+			if buf[0] == delim {
+				return s, nil
+			}
+			s += string(buf[:n])
+		}
+	}
+}
+
 // gatherGpsData reads from gps port until a **RMC line is successfully processed
 // system time is updated
 func gatherGpsData() {
@@ -94,6 +146,9 @@ func gatherGpsData() {
 	}
 	defer p.Close()
 
+	var gotrmc bool
+	var gotgga bool
+
 	for {
 		s, err := readLineFromPort(p, '$')
 		if err != nil {
@@ -102,8 +157,10 @@ func gatherGpsData() {
 		}
 
 		if len(s) > 5 {
-			// **RMC (GNRNC, GPRNC)
-			if s[2:5] == "RMC" {
+			sentence := s[2:5]
+
+			switch sentence {
+			case "RMC":
 				t, l, err := parseRMC(s)
 				if err != nil {
 					log.Printf("%+v", err)
@@ -120,8 +177,25 @@ func gatherGpsData() {
 					gpsdata.setStatus(fmt.Sprintf("error setting time: %+v", err))
 				}
 
-				return
+				gotrmc = true
+			case "GGA":
+				q, n, err := parseGGA(s)
+				if err != nil {
+					log.Printf("%+v", err)
+					continue
+				}
+
+				// keep last known values
+				gpsdata.setFixQuality(q)
+				gpsdata.setNumSatellites(n)
+
+				gotgga = true
 			}
+		}
+
+		if gotrmc && gotgga {
+			// done for now
+			return
 		}
 	}
 }
