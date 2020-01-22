@@ -5,7 +5,7 @@ package := $(shell basename `pwd`)
 default: fmt codetest
 
 get:
-	GOOS=windows GOARCH=amd64 go get -v ./...
+	go get -v ./...
 	go get github.com/akavel/rsrc
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.20.0
 
@@ -19,13 +19,13 @@ build: codetest
 	cp $(package).yaml target/
 
 test:
-	GOOS=linux GOARCH=amd64 go test
+	go test
 
 fmt:
-	GOOS=windows GOARCH=amd64 go fmt ./...
+	go fmt ./...
 
 lint:
-	GOOS=windows GOARCH=amd64 $(shell go env GOPATH)/bin/golangci-lint run --fix
+	$(shell go env GOPATH)/bin/golangci-lint run --fix
 
 vet:
-	GOOS=windows GOARCH=amd64 go vet -all .
+	go vet -all .
