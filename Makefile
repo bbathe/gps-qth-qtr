@@ -14,12 +14,12 @@ codetest: lint vet test
 build: codetest
 	mkdir -p target
 	rm -f target/*
-	rsrc -manifest gps-qth-qtr.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
+	$(shell go env GOPATH)/bin/rsrc -manifest gps-qth-qtr.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go build -v -ldflags -H=windowsgui -o target/$(package).exe
 	cp $(package).yaml target/
 
 test:
-	rsrc -manifest gps-qth-qtr_test.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
+	$(shell go env GOPATH)/bin/rsrc -manifest gps-qth-qtr_test.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
 	GOOS=windows GOARCH=amd64 go test
 	rm gps-qth-qtr.syso
 	
