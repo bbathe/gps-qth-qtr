@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-// parseGGA extracts the fix quality and number of satellites being tracked from a **GGA line
-func parseGGA(s string) (string, int, error) {
+// parseGGA extracts the fix quality, number of satellites, and horizontal dilution of precision being tracked from a **GGA line
+func parseGGA(s string) (string, int, float64, error) {
 	// parse comma delimted records to fields
 	r := csv.NewReader(strings.NewReader(s))
 	fields, err := r.Read()
 	if err != nil {
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 
-	// need at least 8 fields to get fix quality and number of satellites being tracked
-	if len(fields) < 8 {
+	// need at least 9 fields to get fix quality, number of satellites, and horizontal dilution of precision
+	if len(fields) < 9 {
 		err := fmt.Errorf("invalid GGA line")
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 
 	// validate checksum
@@ -31,7 +31,7 @@ func parseGGA(s string) (string, int, error) {
 	if len(strchk) < 2 {
 		err := fmt.Errorf("missing checksum")
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 
 	for _, c := range strchk[0] {
@@ -40,14 +40,14 @@ func parseGGA(s string) (string, int, error) {
 	if fmt.Sprintf("%X", checksum) != strings.TrimSpace(strchk[1]) {
 		err := fmt.Errorf("GGA line bad checksum")
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 
 	// get fix quality
 	q, err := strconv.Atoi(fields[6])
 	if err != nil {
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 	qs := "invalid"
 	switch q {
@@ -73,8 +73,15 @@ func parseGGA(s string) (string, int, error) {
 	n, err := strconv.Atoi(fields[7])
 	if err != nil {
 		log.Printf("%+v", err)
-		return "", 0, err
+		return "", 0, 0.0, err
 	}
 
-	return qs, n, nil
+	// get HDOP
+	h, err := strconv.ParseFloat(fields[8], 64)
+	if err != nil {
+		log.Printf("%+v", err)
+		return "", 0, 0.0, err
+	}
+
+	return qs, n, h, nil
 }

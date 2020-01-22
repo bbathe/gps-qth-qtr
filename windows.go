@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 	"unsafe"
 
@@ -114,13 +115,20 @@ func systemTray() error {
 		return err
 	}
 	statusAction.Triggered().Attach(func() {
+		// conditional message
+		msg := ""
+		if gpsdata.getStatus() != "" {
+			msg = fmt.Sprintf("Message: %s\n", gpsdata.getStatus())
+		}
+
 		status := fmt.Sprintf(
-			"Message: %s\nGridsquare: %s\nTime: %v\nFix Quality: %s\nSatellites: %d",
-			gpsdata.getStatus(),
+			"%sGridsquare: %s\nTime: %v\nFix Quality: %s\nSatellites: %d\nHDOP: %s",
+			msg,
 			gpsdata.getLocation(),
 			gpsdata.getTime(),
 			gpsdata.getFixQuality(),
 			gpsdata.getNumSatellites(),
+			strconv.FormatFloat(gpsdata.getHDOP(), 'f', -1, 64),
 		)
 
 		walk.MsgBox(mw, "Status", status, walk.MsgBoxIconInformation)

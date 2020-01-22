@@ -12,6 +12,7 @@ type gpsData struct {
 	loc string
 	q   string
 	n   int
+	h   float64
 	mu  sync.RWMutex
 }
 
@@ -83,4 +84,18 @@ func (g *gpsData) setNumSatellites(n int) {
 	defer g.mu.Unlock()
 
 	g.n = n
+}
+
+func (g *gpsData) getHDOP() float64 {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+
+	return g.h
+}
+
+func (g *gpsData) setHDOP(h float64) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.h = h
 }

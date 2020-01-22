@@ -1,11 +1,11 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/tarm/serial"
@@ -61,6 +61,7 @@ func gatherGpsData() {
 	p, err := serial.OpenPort(config)
 	if err != nil {
 		log.Printf("%+v", err)
+		gpsdata.setStatus(err.Error())
 		return
 	}
 	defer p.Close()
@@ -72,6 +73,7 @@ func gatherGpsData() {
 		s, err := readLineFromPort(p, '$')
 		if err != nil {
 			log.Printf("%+v", err)
+			gpsdata.setStatus(err.Error())
 			continue
 		}
 
@@ -83,6 +85,8 @@ func gatherGpsData() {
 				t, l, err := parseRMC(s)
 				if err != nil {
 					log.Printf("%+v", err)
+					log.Print(s)
+					gpsdata.setStatus(err.Error())
 					continue
 				}
 
@@ -90,30 +94,39 @@ func gatherGpsData() {
 				gpsdata.setTime(t)
 				gpsdata.setLocation(l)
 
-				// update system time
-				err = setSystemTime(t)
-				if err != nil {
-					gpsdata.setStatus(fmt.Sprintf("error setting time: %+v", err))
-				}
-
 				gotrmc = true
 			case "GGA":
-				q, n, err := parseGGA(s)
+				q, n, h, err := parseGGA(s)
 				if err != nil {
 					log.Printf("%+v", err)
+					log.Print(s)
+					gpsdata.setStatus(err.Error())
 					continue
 				}
 
 				// keep last known values
 				gpsdata.setFixQuality(q)
 				gpsdata.setNumSatellites(n)
+				gpsdata.setHDOP(h)
 
 				gotgga = true
 			}
 		}
 
+		// if we were able to capture all the data we need
 		if gotrmc && gotgga {
-			// done for now
+			// and gps signal good enough
+			if gpsdata.getHDOP() < 5 {
+				// clear any status messages
+				gpsdata.setStatus("")
+
+				// update system time
+				err = setSystemTime(gpsdata.getTime())
+				if err != nil {
+					log.Printf("%+v", err)
+					gpsdata.setStatus(err.Error())
+				}
+			}
 			return
 		}
 	}
@@ -123,31 +136,23 @@ func main() {
 	// show file & location, date & time
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
+	ex, err := os.Executable()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	basefn := strings.TrimSuffix(ex, path.Ext(ex))
+
 	// log to file
-	f, err := os.OpenFile("gps-qth-qtr.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile(basefn+".log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
 	defer f.Close()
 	log.SetOutput(f)
 
-	// command line app
-	flag.Usage = func() {
-		log.Printf("invalid command line")
-	}
-
-	// get config file from command line
-	configFile := flag.String("config", "", "Application configuration file")
-	flag.Parse()
-
-	if len(*configFile) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-
 	// read config
 	// #nosec G304
-	bytes, err := ioutil.ReadFile(*configFile)
+	bytes, err := ioutil.ReadFile(basefn + ".yaml")
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -166,7 +171,7 @@ func main() {
 	// and create recurring task
 	q2 := scheduleRecurring(func() {
 		gatherGpsData()
-	}, 300*time.Second)
+	}, 10*time.Second)
 	defer close(q2)
 
 	// returns on exit
