@@ -19,15 +19,13 @@ build: codetest
 	cp $(package).yaml target/
 
 test:
-	$(shell go env GOPATH)/bin/rsrc -manifest gps-qth-qtr_test.manifest -ico gps-qth-qtr.ico -o gps-qth-qtr.syso
-	GOOS=windows GOARCH=amd64 go test
-	rm gps-qth-qtr.syso
-	
+	GOOS=linux GOARCH=amd64 go test
+
 fmt:
 	GOOS=windows GOARCH=amd64 go fmt ./...
 
 lint:
 	GOOS=windows GOARCH=amd64 $(shell go env GOPATH)/bin/golangci-lint run --fix
-	
+
 vet:
 	GOOS=windows GOARCH=amd64 go vet -all .
