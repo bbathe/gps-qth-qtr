@@ -27,7 +27,7 @@ fmt:
 	GOOS=windows GOARCH=amd64 go fmt ./...
 
 lint:
-	GOOS=windows GOARCH=amd64 golangci-lint run --fix
+	GOOS=windows GOARCH=amd64 $(shell go env GOPATH)/bin/golangci-lint run --fix
 	
 vet:
 	GOOS=windows GOARCH=amd64 go vet -all .
