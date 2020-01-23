@@ -58,6 +58,8 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 // system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
 func gatherGpsData() {
 	if nbmutex.Lock() {
+		defer nbmutex.Unlock()
+
 		config := &serial.Config{
 			Name: config.GPSDevice.Port,
 			Baud: config.GPSDevice.Baud,
