@@ -27,6 +27,9 @@ var (
 
 	// last data from gps device
 	gpsdata gpsData
+
+	// prevent concurrent processing of gps data
+	nbmutex = NewNonBlockingMutex()
 )
 
 // readLineFromPort reads bytes from port and accumulates string until delim is met
@@ -54,81 +57,83 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 // gatherGpsData reads from gps port until **RMC & **GGA lines are successfully processed
 // system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
 func gatherGpsData() {
-	config := &serial.Config{
-		Name: config.GPSDevice.Port,
-		Baud: config.GPSDevice.Baud,
-	}
+	if nbmutex.Lock() {
+		config := &serial.Config{
+			Name: config.GPSDevice.Port,
+			Baud: config.GPSDevice.Baud,
+		}
 
-	p, err := serial.OpenPort(config)
-	if err != nil {
-		log.Printf("%+v", err)
-		gpsdata.setStatus(err.Error())
-		return
-	}
-	defer p.Close()
-
-	var gotrmc bool
-	var gotgga bool
-
-	for {
-		s, err := readLineFromPort(p, '$')
+		p, err := serial.OpenPort(config)
 		if err != nil {
 			log.Printf("%+v", err)
 			gpsdata.setStatus(err.Error())
-			continue
-		}
-
-		if len(s) > 5 {
-			sentence := s[2:5]
-
-			switch sentence {
-			case "RMC":
-				t, l, err := parseRMC(s)
-				if err != nil {
-					log.Printf("%+v", err)
-					log.Print(s)
-					gpsdata.setStatus(err.Error())
-					continue
-				}
-
-				// keep last known values
-				gpsdata.setTime(t)
-				gpsdata.setLocation(l)
-
-				gotrmc = true
-			case "GGA":
-				q, n, h, err := parseGGA(s)
-				if err != nil {
-					log.Printf("%+v", err)
-					log.Print(s)
-					gpsdata.setStatus(err.Error())
-					continue
-				}
-
-				// keep last known values
-				gpsdata.setFixQuality(q)
-				gpsdata.setNumSatellites(n)
-				gpsdata.setHDOP(h)
-
-				gotgga = true
-			}
-		}
-
-		// if we were able to capture all the data we need
-		if gotrmc && gotgga {
-			// and gps signal good enough
-			if gpsdata.getHDOP() < 5 {
-				// clear any status messages
-				gpsdata.setStatus("")
-
-				// update system time
-				err = setSystemTime(gpsdata.getTime())
-				if err != nil {
-					log.Printf("%+v", err)
-					gpsdata.setStatus(err.Error())
-				}
-			}
 			return
+		}
+		defer p.Close()
+
+		var gotrmc bool
+		var gotgga bool
+
+		for {
+			s, err := readLineFromPort(p, '$')
+			if err != nil {
+				log.Printf("%+v", err)
+				gpsdata.setStatus(err.Error())
+				continue
+			}
+
+			if len(s) > 5 {
+				sentence := s[2:5]
+
+				switch sentence {
+				case "RMC":
+					t, l, err := parseRMC(s)
+					if err != nil {
+						log.Printf("%+v", err)
+						log.Print(s)
+						gpsdata.setStatus(err.Error())
+						continue
+					}
+
+					// keep last known values
+					gpsdata.setTime(t)
+					gpsdata.setLocation(l)
+
+					gotrmc = true
+				case "GGA":
+					q, n, h, err := parseGGA(s)
+					if err != nil {
+						log.Printf("%+v", err)
+						log.Print(s)
+						gpsdata.setStatus(err.Error())
+						continue
+					}
+
+					// keep last known values
+					gpsdata.setFixQuality(q)
+					gpsdata.setNumSatellites(n)
+					gpsdata.setHDOP(h)
+
+					gotgga = true
+				}
+			}
+
+			// if we were able to capture all the data we need
+			if gotrmc && gotgga {
+				// and gps signal good enough
+				if gpsdata.getHDOP() < 5 {
+					// clear any status messages
+					gpsdata.setStatus("")
+
+					// update system time
+					err = setSystemTime(gpsdata.getTime())
+					if err != nil {
+						log.Printf("%+v", err)
+						gpsdata.setStatus(err.Error())
+					}
+				}
+				return
+			}
 		}
 	}
 }
