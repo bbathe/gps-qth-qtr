@@ -208,57 +208,6 @@ func Test_latLonToGridsquare(t *testing.T) {
 	}
 }
 
-func Test_parseRMCLocation(t *testing.T) {
-	type args struct {
-		fields []string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "Budapest",
-			args:    args{fields: []string{"", "", "", "4726.5824", "N", "01900.0581", "E"}},
-			want:    "JN97mk",
-			wantErr: false,
-		},
-		{
-			name:    "Rio De Janeiro",
-			args:    args{fields: []string{"", "", "", "2254.7397", "S", "04310.957", "W"}},
-			want:    "GG87jc",
-			wantErr: false,
-		},
-		{
-			name:    "Washington DC",
-			args:    args{fields: []string{"", "", "", "3855.2", "N", "07703.9", "W"}},
-			want:    "FM18lw",
-			wantErr: false,
-		},
-		{
-			name:    "McMurdo Station",
-			args:    args{fields: []string{"", "", "", "7751.3", "S", "16642.4", "E"}},
-			want:    "RB32id",
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		ttt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseRMCLocation(ttt.args.fields)
-			if (err != nil) != ttt.wantErr {
-				t.Errorf("parseRMCLocation() error = %v, wantErr %v", err, ttt.wantErr)
-				return
-			}
-			if got != ttt.want {
-				t.Errorf("parseRMCLocation() = %v, want %v", got, ttt.want)
-			}
-		})
-	}
-}
-
 func Test_parseRMC(t *testing.T) {
 	type args struct {
 		s string
@@ -268,13 +217,44 @@ func Test_parseRMC(t *testing.T) {
 		args    args
 		want    time.Time
 		want1   string
+		want2   float64
+		want3   float64
 		wantErr bool
 	}{
+		{
+			name:    "Budapest",
+			args:    args{s: "GNRMC,203434.00,A,4726.5824,N,01900.0581,E,0.149,,180120,,,A*62"},
+			want:    time.Date(2020, time.Month(1), 18, 20, 34, 34, 0, time.UTC),
+			want1:   "JN97mk",
+			want2:   47.44304,
+			want3:   19.000968333333333,
+			wantErr: false,
+		},
+		{
+			name:    "Rio De Janeiro",
+			args:    args{s: "GNRMC,203434.00,A,2254.7397,S,04310.957,W,0.149,,300333,,,A*59"},
+			want:    time.Date(2033, time.Month(3), 30, 20, 34, 34, 0, time.UTC),
+			want1:   "GG87jc",
+			want2:   -22.912328333333335,
+			want3:   -43.18261666666667,
+			wantErr: false,
+		},
+		{
+			name:    "Washington DC",
+			args:    args{s: "GNRMC,020202.00,A,3855.2,N,07703.9,W,0.149,,180120,,,A*7B"},
+			want:    time.Date(2020, time.Month(1), 18, 2, 2, 2, 0, time.UTC),
+			want1:   "FM18lw",
+			want2:   38.92,
+			want3:   -77.065,
+			wantErr: false,
+		},
 		{
 			name:    "McMurdo Station",
 			args:    args{s: "GNRMC,203434.00,A,7751.3,S,16642.4,E,0.149,,180120,,,A*73"},
 			want:    time.Date(2020, time.Month(1), 18, 20, 34, 34, 0, time.UTC),
 			want1:   "RB32id",
+			want2:   -77.855000,
+			want3:   166.70666666666668,
 			wantErr: false,
 		},
 		{
@@ -282,6 +262,8 @@ func Test_parseRMC(t *testing.T) {
 			args:    args{s: "GNRMC,203434.00,A,7751.3,S,16642.4,E,0.149,,"},
 			want:    time.Time{},
 			want1:   "",
+			want2:   0.0,
+			want3:   0.0,
 			wantErr: true,
 		},
 		{
@@ -289,6 +271,8 @@ func Test_parseRMC(t *testing.T) {
 			args:    args{s: "GNRMC,203434.00,A,7751.3,S,16642.4,E,0.149,,180120,,,A*74"},
 			want:    time.Time{},
 			want1:   "",
+			want2:   0.0,
+			want3:   0.0,
 			wantErr: true,
 		},
 		{
@@ -296,6 +280,8 @@ func Test_parseRMC(t *testing.T) {
 			args:    args{s: "GNRMC,203434.00,V,7751.3,S,16642.4,E,0.149,,180120,,,A*73"},
 			want:    time.Time{},
 			want1:   "",
+			want2:   0.0,
+			want3:   0.0,
 			wantErr: true,
 		},
 	}
@@ -303,7 +289,7 @@ func Test_parseRMC(t *testing.T) {
 		ttt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := parseRMC(ttt.args.s)
+			got, got1, got2, got3, err := parseRMC(ttt.args.s)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("parseRMC() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -313,6 +299,12 @@ func Test_parseRMC(t *testing.T) {
 			}
 			if got1 != ttt.want1 {
 				t.Errorf("parseRMC() got1 = %v, want %v", got1, ttt.want1)
+			}
+			if got2 != ttt.want2 {
+				t.Errorf("parseRMC() got2 = %v, want %v", got2, ttt.want2)
+			}
+			if got3 != ttt.want3 {
+				t.Errorf("parseRMC() got3 = %v, want %v", got3, ttt.want3)
 			}
 		})
 	}

@@ -110,50 +110,21 @@ func latLonToGridsquare(lat, lon float64) (string, error) {
 	), nil
 }
 
-// parseRMCLocation extracts the location (as maidenhead gridsquare) from an **RMC line
-func parseRMCLocation(fields []string) (string, error) {
-	lat, err := parseDegMinToFloat(fields[3])
-	if err != nil {
-		log.Printf("%+v", err)
-		return "", err
-	}
-	if fields[4] == "S" {
-		lat = -lat
-	}
-
-	lon, err := parseDegMinToFloat(fields[5])
-	if err != nil {
-		log.Printf("%+v", err)
-		return "", err
-	}
-	if fields[6] == "W" {
-		lon = -lon
-	}
-
-	gridsquare, err := latLonToGridsquare(lat, lon)
-	if err != nil {
-		log.Printf("%+v", err)
-		return "", err
-	}
-
-	return gridsquare, nil
-}
-
-// parseRMC extracts the time and location (as maidenhead gridsquare) from an **RMC line
-func parseRMC(s string) (time.Time, string, error) {
+// parseRMC extracts the time, maidenhead gridsquare, latitude, and longitude from an **RMC line
+func parseRMC(s string) (time.Time, string, float64, float64, error) {
 	// parse comma delimted records to fields
 	r := csv.NewReader(strings.NewReader(s))
 	fields, err := r.Read()
 	if err != nil {
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
 	// need at least 11 fields to get time, location, and checksum
 	if len(fields) < 11 {
 		err := fmt.Errorf("invalid RMC line")
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
 	// validate checksum
@@ -162,7 +133,7 @@ func parseRMC(s string) (time.Time, string, error) {
 	if len(strchk) < 2 {
 		err := fmt.Errorf("missing checksum")
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
 	for _, c := range strchk[0] {
@@ -171,29 +142,50 @@ func parseRMC(s string) (time.Time, string, error) {
 	if fmt.Sprintf("%X", checksum) != strings.TrimSpace(strchk[1]) {
 		err := fmt.Errorf("RMC line bad checksum")
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		fmt.Printf("%X ", checksum)
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
 	// status is valid?
 	if fields[2] != "A" {
 		err := fmt.Errorf("receiver not in valid state")
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
 	// get time
 	t, err := parseRMCTime(fields)
 	if err != nil {
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
 	}
 
-	// get maidenhead gridsquare
-	l, err := parseRMCLocation(fields)
+	// get latitude
+	lat, err := parseDegMinToFloat(fields[3])
 	if err != nil {
 		log.Printf("%+v", err)
-		return time.Time{}, "", err
+		return time.Time{}, "", 0.0, 0.0, err
+	}
+	if fields[4] == "S" {
+		lat = -lat
 	}
 
-	return t, l, nil
+	// get longitude
+	lon, err := parseDegMinToFloat(fields[5])
+	if err != nil {
+		log.Printf("%+v", err)
+		return time.Time{}, "", 0.0, 0.0, err
+	}
+	if fields[6] == "W" {
+		lon = -lon
+	}
+
+	// calculate gridsquare
+	gridsquare, err := latLonToGridsquare(lat, lon)
+	if err != nil {
+		log.Printf("%+v", err)
+		return time.Time{}, "", 0.0, 0.0, err
+	}
+
+	return t, gridsquare, lat, lon, nil
 }

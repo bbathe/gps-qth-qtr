@@ -106,7 +106,8 @@ func gatherGpsData() {
 				case "RMC":
 					var t time.Time
 					var l string
-					t, l, err = parseRMC(s)
+					var lat, lon float64
+					t, l, lat, lon, err = parseRMC(s)
 					if err != nil {
 						log.Printf("%+v|%+s", err, s)
 						return
@@ -114,7 +115,9 @@ func gatherGpsData() {
 
 					// keep values
 					newgpsdata.setTime(t)
-					newgpsdata.setLocation(l)
+					newgpsdata.setGridsquare(l)
+					newgpsdata.setLatitude(lat)
+					newgpsdata.setLongitude(lon)
 
 					gotrmc = true
 				case "GGA":

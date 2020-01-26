@@ -3,10 +3,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 	"unsafe"
 
@@ -63,7 +60,7 @@ func runStatusWindow() error {
 		Name:     "statusmw",
 		Title:    "Status Data",
 		Icon:     appIcon,
-		Size:     declarative.Size{Width: 300, Height: 200},
+		Size:     declarative.Size{Width: 300, Height: 250},
 		Layout:   declarative.VBox{MarginsZero: true},
 		Children: []declarative.Widget{
 			declarative.Composite{
@@ -112,65 +109,54 @@ func runStatusWindow() error {
 
 // newStatusTableDataModel returns data model used to populate status tableview
 func newStatusTableDataModel() *statusTableDataModel {
-	m := &statusTableDataModel{items: make([]*statusTableData, 0, 6)}
+	m := &statusTableDataModel{items: make([]*statusTableData, 0, 8)}
 
-	// handle empty message
-	msg := gpsdata.getStatus()
-	if msg == "" {
-		msg = "OK"
-	}
 	m.items = append(m.items, &statusTableData{
 		Index: 0,
 		Name:  "Message",
-		Value: strings.ToUpper(msg[0:1]) + msg[1:],
+		Value: gpsdata.formatStatus(),
 	})
 
 	m.items = append(m.items, &statusTableData{
 		Index: 1,
 		Name:  "Gridsquare",
-		Value: gpsdata.getLocation(),
+		Value: gpsdata.formatGridsquare(),
 	})
 
-	// handle zero time
-	t := gpsdata.getTime()
-	tm := ""
-	if t != (time.Time{}) {
-		tm = t.Format("2006-01-02 15:04:05 UTC")
-	}
 	m.items = append(m.items, &statusTableData{
 		Index: 2,
-		Name:  "Time",
-		Value: tm,
+		Name:  "Latitude",
+		Value: gpsdata.formatLatitude(),
 	})
 
-	// handle invalid satellites
-	n := gpsdata.getNumSatellites()
-	sat := ""
-	if n > -1 {
-		sat = fmt.Sprintf("%d", n)
-	}
 	m.items = append(m.items, &statusTableData{
 		Index: 3,
-		Name:  "Satellites",
-		Value: sat,
+		Name:  "Longitude",
+		Value: gpsdata.formatLongitude(),
 	})
 
 	m.items = append(m.items, &statusTableData{
 		Index: 4,
-		Name:  "Fix Quality",
-		Value: gpsdata.getFixQuality(),
+		Name:  "Time",
+		Value: gpsdata.formatTime(),
 	})
 
-	// handle invalid hdop
-	h := gpsdata.getHDOP()
-	hdop := ""
-	if n > -1 {
-		hdop = strconv.FormatFloat(h, 'f', -1, 64)
-	}
 	m.items = append(m.items, &statusTableData{
 		Index: 5,
+		Name:  "Satellites",
+		Value: gpsdata.formatNumSatellites(),
+	})
+
+	m.items = append(m.items, &statusTableData{
+		Index: 6,
+		Name:  "Fix Quality",
+		Value: gpsdata.formatFixQuality(),
+	})
+
+	m.items = append(m.items, &statusTableData{
+		Index: 7,
 		Name:  "HDOP",
-		Value: hdop,
+		Value: gpsdata.formatHDOP(),
 	})
 
 	return m
@@ -245,7 +231,7 @@ func systemTray() error {
 		return err
 	}
 	gridsquareAction.Triggered().Attach(func() {
-		err := walk.Clipboard().SetText(gpsdata.getLocation())
+		err := walk.Clipboard().SetText(gpsdata.formatGridsquare())
 		if err != nil {
 			log.Printf("%+v", err)
 		}
