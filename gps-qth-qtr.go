@@ -29,7 +29,7 @@ var (
 	gpsdata = newGPSData()
 
 	// prevent concurrent processing of gps data
-	nbmutex = NewNonBlockingMutex()
+	nbmGatherGpsData = NewNonBlockingMutex()
 )
 
 // readLineFromPort reads bytes from port and accumulates string until delim is met
@@ -57,8 +57,8 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 // gatherGpsData reads from gps port until **RMC & **GGA lines are successfully processed
 // system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
 func gatherGpsData() {
-	if nbmutex.Lock() {
-		defer nbmutex.Unlock()
+	if nbmGatherGpsData.Lock() {
+		defer nbmGatherGpsData.Unlock()
 
 		// we want the update to the global gpsdata to be atomic and only if there was no errors in gathering data
 		var err error
