@@ -1,5 +1,8 @@
-name: release
-on: [push]
+name: Release
+on:
+  push:
+    tags:
+    - *
 jobs:
 
   release:
@@ -19,12 +22,14 @@ jobs:
     - name: Get dependencies
       run: make get
 
+    - name: Codetest
+      run: make codetest
+
     - name: Build
       run: make build
 
     - name: Release
       uses: fnkr/github-action-ghr@v1
-      if: startsWith(github.ref, 'refs/tags/')
       env:
         GHR_COMPRESS: zip
         GHR_PATH: target/
