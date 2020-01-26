@@ -10,11 +10,14 @@ import (
 	"unsafe"
 
 	"github.com/lxn/walk"
+	declarative "github.com/lxn/walk/declarative"
+	"github.com/lxn/win"
 	"golang.org/x/sys/windows"
 )
 
 var (
 	procSetSystemTime *windows.Proc
+	appIcon           *walk.Icon
 )
 
 // setSystemTime calls the windows SetSystemTime API
@@ -50,7 +53,132 @@ func init() {
 	}
 }
 
+func RunStatusWindow() error {
+	var statusWindow *walk.MainWindow
+
+	mw := declarative.MainWindow{
+		AssignTo: &statusWindow,
+		Name:     "statusmw",
+		Title:    "Status Data",
+		Icon:     appIcon,
+		Size:     declarative.Size{Width: 300, Height: 200},
+		MinSize:  declarative.Size{Width: 300, Height: 200},
+		MaxSize:  declarative.Size{Width: 300, Height: 200},
+		Layout:   declarative.VBox{MarginsZero: true},
+		Children: []declarative.Widget{
+			declarative.Composite{
+				Layout:        declarative.Grid{Rows: 2},
+				StretchFactor: 4,
+				Children: []declarative.Widget{
+					declarative.TableView{
+						Name:                "statustv",
+						ColumnsOrderable:    true,
+						AlternatingRowBG:    true,
+						HeaderHidden:        true,
+						LastColumnStretched: true,
+						Columns: []declarative.TableViewColumn{
+							{Name: "Index", Hidden: true},
+							{Name: "Name"},
+							{Name: "Value"},
+						},
+						Model: NewTableDataModel(),
+					},
+					declarative.PushButton{
+						Text: "OK",
+						OnClicked: func() {
+							statusWindow.Close()
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := mw.Create()
+	if err != nil {
+		return err
+	}
+
+	// disable maximize, minimize, and resizing
+	hwnd := statusWindow.Handle()
+	win.SetWindowLong(hwnd, win.GWL_STYLE, win.GetWindowLong(hwnd, win.GWL_STYLE) & ^(win.WS_MAXIMIZEBOX|win.WS_MINIMIZEBOX|win.WS_SIZEBOX))
+
+	// message loop
+	statusWindow.Run()
+
+	return nil
+}
+
+func NewTableDataModel() *TableDataModel {
+	m := &TableDataModel{items: make([]*TableData, 0, 32)}
+
+	// conditional message
+	if gpsdata.getStatus() != "" {
+		m.items = append(m.items, &TableData{
+			Index: 0,
+			Name:  "Message",
+			Value: gpsdata.getStatus(),
+		})
+	}
+
+	m.items = append(m.items, &TableData{
+		Index: 1,
+		Name:  "Gridsquare",
+		Value: gpsdata.getLocation(),
+	})
+
+	m.items = append(m.items, &TableData{
+		Index: 2,
+		Name:  "Time",
+		Value: gpsdata.getTime().Format("2006-01-02 15:04:05 UTC"),
+	})
+
+	m.items = append(m.items, &TableData{
+		Index: 3,
+		Name:  "Satellites",
+		Value: fmt.Sprintf("%d", gpsdata.getNumSatellites()),
+	})
+
+	m.items = append(m.items, &TableData{
+		Index: 4,
+		Name:  "Fix Quality",
+		Value: gpsdata.getFixQuality(),
+	})
+
+	m.items = append(m.items, &TableData{
+		Index: 5,
+		Name:  "HDOP",
+		Value: strconv.FormatFloat(gpsdata.getHDOP(), 'f', -1, 64),
+	})
+
+	return m
+}
+
+type TableDataModel struct {
+	walk.SortedReflectTableModelBase
+	items []*TableData
+}
+
+func (m *TableDataModel) Items() interface{} {
+	return m.items
+}
+
+type TableData struct {
+	Index int
+	Name  string
+	Value string
+}
+
 func systemTray() error {
+	var err error
+
+	// load appIcon
+	appIcon, err = walk.Resources.Icon("3")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
+	}
+
 	// our window
 	mw, err := walk.NewMainWindow()
 	if err != nil {
@@ -58,7 +186,7 @@ func systemTray() error {
 		return err
 	}
 
-	// create the notify icon and make sure we clean it up on exit
+	// create our systray notify icon
 	ni, err := walk.NewNotifyIcon(mw)
 	if err != nil {
 		log.Printf("%+v", err)
@@ -72,12 +200,7 @@ func systemTray() error {
 	}()
 
 	// set the icon and a tool tip text
-	icon, err := walk.Resources.Icon("3")
-	if err != nil {
-		log.Printf("%+v", err)
-		return err
-	}
-	err = ni.SetIcon(icon)
+	err = ni.SetIcon(appIcon)
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
@@ -90,7 +213,7 @@ func systemTray() error {
 
 	// gridsquare action in context menu
 	gridsquareAction := walk.NewAction()
-	err = gridsquareAction.SetText("Gridsquare")
+	err = gridsquareAction.SetText("Copy Gridsquare")
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
@@ -109,29 +232,16 @@ func systemTray() error {
 
 	// status action in context menu
 	statusAction := walk.NewAction()
-	err = statusAction.SetText("Status")
+	err = statusAction.SetText("Status...")
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
 	}
 	statusAction.Triggered().Attach(func() {
-		// conditional message
-		msg := ""
-		if gpsdata.getStatus() != "" {
-			msg = fmt.Sprintf("Message: %s\n", gpsdata.getStatus())
+		err = RunStatusWindow()
+		if err != nil {
+			log.Printf("%+v", err)
 		}
-
-		status := fmt.Sprintf(
-			"%sGridsquare: %s\nTime: %v\nFix Quality: %s\nSatellites: %d\nHDOP: %s",
-			msg,
-			gpsdata.getLocation(),
-			gpsdata.getTime(),
-			gpsdata.getFixQuality(),
-			gpsdata.getNumSatellites(),
-			strconv.FormatFloat(gpsdata.getHDOP(), 'f', -1, 64),
-		)
-
-		walk.MsgBox(mw, "Status", status, walk.MsgBoxIconInformation)
 	})
 	err = ni.ContextMenu().Actions().Add(statusAction)
 	if err != nil {
