@@ -26,7 +26,7 @@ var (
 	config configuration
 
 	// last data from gps device
-	gpsdata gpsData
+	gpsdata = newGPSData()
 
 	// prevent concurrent processing of gps data
 	nbmutex = NewNonBlockingMutex()
@@ -60,15 +60,30 @@ func gatherGpsData() {
 	if nbmutex.Lock() {
 		defer nbmutex.Unlock()
 
+		// we want the update to the global gpsdata to be atomic and only if there was no errors in gathering data
+		var err error
+		newgpsdata := newGPSData()
+		defer func() {
+			if err != nil {
+				// reset newgpsdata
+				newgpsdata = newGPSData()
+
+				// set message to error string
+				newgpsdata.setStatus(err.Error())
+			}
+			// copy over new values
+			gpsdata.copy(newgpsdata)
+		}()
+
 		config := &serial.Config{
 			Name: config.GPSDevice.Port,
 			Baud: config.GPSDevice.Baud,
 		}
 
-		p, err := serial.OpenPort(config)
+		var p *serial.Port
+		p, err = serial.OpenPort(config)
 		if err != nil {
 			log.Printf("%+v", err)
-			gpsdata.setStatus(err.Error())
 			return
 		}
 		defer p.Close()
@@ -77,11 +92,11 @@ func gatherGpsData() {
 		var gotgga bool
 
 		for {
-			s, err := readLineFromPort(p, '$')
+			var s string
+			s, err = readLineFromPort(p, '$')
 			if err != nil {
 				log.Printf("%+v", err)
-				gpsdata.setStatus(err.Error())
-				continue
+				return
 			}
 
 			if len(s) > 5 {
@@ -89,32 +104,33 @@ func gatherGpsData() {
 
 				switch sentence {
 				case "RMC":
-					t, l, err := parseRMC(s)
+					var t time.Time
+					var l string
+					t, l, err = parseRMC(s)
 					if err != nil {
-						log.Printf("%+v", err)
-						log.Print(s)
-						gpsdata.setStatus(err.Error())
-						continue
+						log.Printf("%+v|%+s", err, s)
+						return
 					}
 
-					// keep last known values
-					gpsdata.setTime(t)
-					gpsdata.setLocation(l)
+					// keep values
+					newgpsdata.setTime(t)
+					newgpsdata.setLocation(l)
 
 					gotrmc = true
 				case "GGA":
-					q, n, h, err := parseGGA(s)
+					var q string
+					var n int
+					var h float64
+					q, n, h, err = parseGGA(s)
 					if err != nil {
-						log.Printf("%+v", err)
-						log.Print(s)
-						gpsdata.setStatus(err.Error())
-						continue
+						log.Printf("%+v|%+s", err, s)
+						return
 					}
 
-					// keep last known values
-					gpsdata.setFixQuality(q)
-					gpsdata.setNumSatellites(n)
-					gpsdata.setHDOP(h)
+					// keep values
+					newgpsdata.setFixQuality(q)
+					newgpsdata.setNumSatellites(n)
+					newgpsdata.setHDOP(h)
 
 					gotgga = true
 				}
@@ -123,15 +139,11 @@ func gatherGpsData() {
 			// if we were able to capture all the data we need
 			if gotrmc && gotgga {
 				// and gps signal good enough
-				if gpsdata.getHDOP() < 5 {
-					// clear any status messages
-					gpsdata.setStatus("")
-
+				if newgpsdata.getHDOP() < 5 {
 					// update system time
-					err = setSystemTime(gpsdata.getTime())
+					err = setSystemTime(newgpsdata.getTime())
 					if err != nil {
 						log.Printf("%+v", err)
-						gpsdata.setStatus(err.Error())
 					}
 				}
 				return

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -53,7 +54,8 @@ func init() {
 	}
 }
 
-func RunStatusWindow() error {
+// runStatusWindow presents the user with a window containing the GPS data we have collected
+func runStatusWindow() error {
 	var statusWindow *walk.MainWindow
 
 	mw := declarative.MainWindow{
@@ -62,8 +64,6 @@ func RunStatusWindow() error {
 		Title:    "Status Data",
 		Icon:     appIcon,
 		Size:     declarative.Size{Width: 300, Height: 200},
-		MinSize:  declarative.Size{Width: 300, Height: 200},
-		MaxSize:  declarative.Size{Width: 300, Height: 200},
 		Layout:   declarative.VBox{MarginsZero: true},
 		Children: []declarative.Widget{
 			declarative.Composite{
@@ -81,7 +81,7 @@ func RunStatusWindow() error {
 							{Name: "Name"},
 							{Name: "Value"},
 						},
-						Model: NewTableDataModel(),
+						Model: newStatusTableDataModel(),
 					},
 					declarative.PushButton{
 						Text: "OK",
@@ -94,6 +94,7 @@ func RunStatusWindow() error {
 		},
 	}
 
+	// create window
 	err := mw.Create()
 	if err != nil {
 		return err
@@ -103,72 +104,97 @@ func RunStatusWindow() error {
 	hwnd := statusWindow.Handle()
 	win.SetWindowLong(hwnd, win.GWL_STYLE, win.GetWindowLong(hwnd, win.GWL_STYLE) & ^(win.WS_MAXIMIZEBOX|win.WS_MINIMIZEBOX|win.WS_SIZEBOX))
 
-	// message loop
+	// start message loop
 	statusWindow.Run()
 
 	return nil
 }
 
-func NewTableDataModel() *TableDataModel {
-	m := &TableDataModel{items: make([]*TableData, 0, 32)}
+// newStatusTableDataModel returns data model used to populate status tableview
+func newStatusTableDataModel() *statusTableDataModel {
+	m := &statusTableDataModel{items: make([]*statusTableData, 0, 6)}
 
-	// conditional message
-	if gpsdata.getStatus() != "" {
-		m.items = append(m.items, &TableData{
-			Index: 0,
-			Name:  "Message",
-			Value: gpsdata.getStatus(),
-		})
+	// handle empty message
+	msg := gpsdata.getStatus()
+	if msg == "" {
+		msg = "OK"
 	}
+	m.items = append(m.items, &statusTableData{
+		Index: 0,
+		Name:  "Message",
+		Value: strings.ToUpper(msg[0:1]) + msg[1:],
+	})
 
-	m.items = append(m.items, &TableData{
+	m.items = append(m.items, &statusTableData{
 		Index: 1,
 		Name:  "Gridsquare",
 		Value: gpsdata.getLocation(),
 	})
 
-	m.items = append(m.items, &TableData{
+	// handle zero time
+	t := gpsdata.getTime()
+	tm := ""
+	if t != (time.Time{}) {
+		tm = t.Format("2006-01-02 15:04:05 UTC")
+	}
+	m.items = append(m.items, &statusTableData{
 		Index: 2,
 		Name:  "Time",
-		Value: gpsdata.getTime().Format("2006-01-02 15:04:05 UTC"),
+		Value: tm,
 	})
 
-	m.items = append(m.items, &TableData{
+	// handle invalid satellites
+	n := gpsdata.getNumSatellites()
+	sat := ""
+	if n > -1 {
+		sat = fmt.Sprintf("%d", n)
+	}
+	m.items = append(m.items, &statusTableData{
 		Index: 3,
 		Name:  "Satellites",
-		Value: fmt.Sprintf("%d", gpsdata.getNumSatellites()),
+		Value: sat,
 	})
 
-	m.items = append(m.items, &TableData{
+	m.items = append(m.items, &statusTableData{
 		Index: 4,
 		Name:  "Fix Quality",
 		Value: gpsdata.getFixQuality(),
 	})
 
-	m.items = append(m.items, &TableData{
+	// handle invalid hdop
+	h := gpsdata.getHDOP()
+	hdop := ""
+	if n > -1 {
+		hdop = strconv.FormatFloat(h, 'f', -1, 64)
+	}
+	m.items = append(m.items, &statusTableData{
 		Index: 5,
 		Name:  "HDOP",
-		Value: strconv.FormatFloat(gpsdata.getHDOP(), 'f', -1, 64),
+		Value: hdop,
 	})
 
 	return m
 }
 
-type TableDataModel struct {
+// statusTableDataModel is our datamodel type for status data
+type statusTableDataModel struct {
 	walk.SortedReflectTableModelBase
-	items []*TableData
+	items []*statusTableData
 }
 
-func (m *TableDataModel) Items() interface{} {
+// Items is needed by status tableview
+func (m *statusTableDataModel) Items() interface{} {
 	return m.items
 }
 
-type TableData struct {
+// statusTableData is our data type for status data
+type statusTableData struct {
 	Index int
 	Name  string
 	Value string
 }
 
+// systemTray create the UI element in the system tray for the user to interact with
 func systemTray() error {
 	var err error
 
@@ -238,7 +264,7 @@ func systemTray() error {
 		return err
 	}
 	statusAction.Triggered().Attach(func() {
-		err = RunStatusWindow()
+		err = runStatusWindow()
 		if err != nil {
 			log.Printf("%+v", err)
 		}
@@ -272,7 +298,7 @@ func systemTray() error {
 		return err
 	}
 
-	// message loop
+	// start message loop
 	mw.Run()
 
 	return nil
