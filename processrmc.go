@@ -142,7 +142,7 @@ func parseRMC(s string) (time.Time, string, float64, float64, error) {
 	if fmt.Sprintf("%X", checksum) != strings.TrimSpace(strchk[1]) {
 		err := fmt.Errorf("RMC line bad checksum")
 		log.Printf("%+v", err)
-		fmt.Printf("%X ", checksum)
+		//fmt.Printf("%X ", checksum)
 		return time.Time{}, "", 0.0, 0.0, err
 	}
 
