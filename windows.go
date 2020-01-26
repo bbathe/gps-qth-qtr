@@ -14,8 +14,17 @@ import (
 )
 
 var (
+	// pointer to SetSystemTime proc
 	procSetSystemTime *windows.Proc
-	appIcon           *walk.Icon
+
+	// our icon
+	appIcon *walk.Icon
+
+	// prevent multiple status windows
+	nbmRunStatusWindow = NewNonBlockingMutex()
+
+	// reference to status window
+	statusWindow *walk.MainWindow
 )
 
 // setSystemTime calls the windows SetSystemTime API
@@ -53,56 +62,61 @@ func init() {
 
 // runStatusWindow presents the user with a window containing the GPS data we have collected
 func runStatusWindow() error {
-	var statusWindow *walk.MainWindow
+	if nbmRunStatusWindow.Lock() {
+		defer nbmRunStatusWindow.Unlock()
 
-	mw := declarative.MainWindow{
-		AssignTo: &statusWindow,
-		Name:     "statusmw",
-		Title:    "Status Data",
-		Icon:     appIcon,
-		Size:     declarative.Size{Width: 300, Height: 250},
-		Layout:   declarative.VBox{MarginsZero: true},
-		Children: []declarative.Widget{
-			declarative.Composite{
-				Layout:        declarative.Grid{Rows: 2},
-				StretchFactor: 4,
-				Children: []declarative.Widget{
-					declarative.TableView{
-						Name:                "statustv",
-						ColumnsOrderable:    true,
-						AlternatingRowBG:    true,
-						HeaderHidden:        true,
-						LastColumnStretched: true,
-						Columns: []declarative.TableViewColumn{
-							{Name: "Index", Hidden: true},
-							{Name: "Name"},
-							{Name: "Value"},
+		mw := declarative.MainWindow{
+			AssignTo: &statusWindow,
+			Name:     "statusmw",
+			Title:    "Status Data",
+			Icon:     appIcon,
+			Size:     declarative.Size{Width: 300, Height: 250},
+			Layout:   declarative.VBox{MarginsZero: true},
+			Children: []declarative.Widget{
+				declarative.Composite{
+					Layout:        declarative.Grid{Rows: 2},
+					StretchFactor: 4,
+					Children: []declarative.Widget{
+						declarative.TableView{
+							Name:                "statustv",
+							ColumnsOrderable:    true,
+							AlternatingRowBG:    true,
+							HeaderHidden:        true,
+							LastColumnStretched: true,
+							Columns: []declarative.TableViewColumn{
+								{Name: "Index", Hidden: true},
+								{Name: "Name"},
+								{Name: "Value"},
+							},
+							Model: newStatusTableDataModel(),
 						},
-						Model: newStatusTableDataModel(),
-					},
-					declarative.PushButton{
-						Text: "OK",
-						OnClicked: func() {
-							statusWindow.Close()
+						declarative.PushButton{
+							Text: "OK",
+							OnClicked: func() {
+								statusWindow.Close()
+							},
 						},
 					},
 				},
 			},
-		},
+		}
+
+		// create window
+		err := mw.Create()
+		if err != nil {
+			return err
+		}
+
+		// disable maximize, minimize, and resizing
+		hwnd := statusWindow.Handle()
+		win.SetWindowLong(hwnd, win.GWL_STYLE, win.GetWindowLong(hwnd, win.GWL_STYLE) & ^(win.WS_MAXIMIZEBOX|win.WS_MINIMIZEBOX|win.WS_SIZEBOX))
+
+		// start message loop
+		statusWindow.Run()
+	} else {
+		// bring already running status window to top
+		statusWindow.Show()
 	}
-
-	// create window
-	err := mw.Create()
-	if err != nil {
-		return err
-	}
-
-	// disable maximize, minimize, and resizing
-	hwnd := statusWindow.Handle()
-	win.SetWindowLong(hwnd, win.GWL_STYLE, win.GetWindowLong(hwnd, win.GWL_STYLE) & ^(win.WS_MAXIMIZEBOX|win.WS_MINIMIZEBOX|win.WS_SIZEBOX))
-
-	// start message loop
-	statusWindow.Run()
 
 	return nil
 }
