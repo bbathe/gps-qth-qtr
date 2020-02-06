@@ -88,6 +88,14 @@ func gatherGpsData() {
 		}
 		defer p.Close()
 
+		// purge any com port buffers
+		buf := make([]byte, 4096)
+		_, err = p.Read(buf)
+		if err != nil {
+			log.Printf("%+v", err)
+			return
+		}
+
 		var gotrmc bool
 		var gotgga bool
 
