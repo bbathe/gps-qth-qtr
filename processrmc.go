@@ -53,7 +53,13 @@ func parseRMCTime(fields []string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	return time.Date(year, time.Month(mon), day, hour, min, sec, 0, time.UTC), nil
+	msec, err := strconv.Atoi(t[1])
+	if err != nil {
+		log.Printf("%+v", err)
+		return time.Time{}, err
+	}
+
+	return time.Date(year, time.Month(mon), day, hour, min, sec, msec*1000000, time.UTC), nil
 }
 
 // parseDegMinToFloat parses NMEA format of (d)ddmm.mmmm to decimal degrees

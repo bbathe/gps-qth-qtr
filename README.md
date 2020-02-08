@@ -6,7 +6,7 @@ gps-qth-qtr is a Windows system tray application that interfaces with a connecte
 
 ## Description
 
-I created this application to keep my laptop's time correct when I'm "off the grid" during mobile [Amateur Radio](http://www.arrl.org) activities using protocols where having the correct time is important like [FT4 and FT8](https://www.physics.princeton.edu/pulsar/k1jt/wsjtx.html).
+I created this application to keep my laptop's time correct when I'm "off the grid" during mobile [Amateur Radio](http://www.arrl.org) activities using protocols where having the correct time is important like [FT4 and FT8](https://www.physics.princeton.edu/pulsar/k1jt/wsjtx.html).  While time is important with these protocols, the accuracy required is only within a couple seconds.  I'm not doing anything fancy to keep the system time more accurate than required by these protocols.
 
 I did all the inital development using a [u-blox 8](https://www.u-blox.com) reciever from [Amazon](https://smile.amazon.com/gp/product/B071XY4R26).  This application only uses the 2 [NMEA 0183](https://en.wikipedia.org/wiki/NMEA_0183) sentences GGA and RMC and does not restrict the NMEA 0183 talker, so it should work with any navigation satellite system reciever as long as you can get the correct drivers installed so the data can be read from a COM port.
 
@@ -21,7 +21,7 @@ To install this application:
     gpsdevice:
       port: COM3
       baud: 9600
-      pollrate: 60
+      pollrate: 900
     ```
     - ```port``` is the name of the Windows COM port to read from the connected GPS device, this is setup when you install the device driver for your GPS device.  You should be able to find this in Device Manager.
     - ```baud``` is the rate at which information is transferred from the COM port, this is a setting on the port that is setup when you install the device driver for your GPS device.  You should be able to find this in Device Manager, check the "Port Settings" tab for the device.
