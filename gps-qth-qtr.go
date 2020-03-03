@@ -56,7 +56,7 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 
 // gatherGpsData reads from gps port until **RMC & **GGA lines are successfully processed
 // system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
-func gatherGpsData() {
+func gatherGpsData() bool {
 	if nbmGatherGpsData.Lock() {
 		defer nbmGatherGpsData.Unlock()
 
@@ -84,7 +84,7 @@ func gatherGpsData() {
 		p, err = serial.OpenPort(config)
 		if err != nil {
 			log.Printf("%+v", err)
-			return
+			return false
 		}
 		defer p.Close()
 
@@ -93,7 +93,7 @@ func gatherGpsData() {
 		_, err = p.Read(buf)
 		if err != nil {
 			log.Printf("%+v", err)
-			return
+			return false
 		}
 
 		var gotrmc bool
@@ -104,7 +104,7 @@ func gatherGpsData() {
 			s, err = readLineFromPort(p, '$')
 			if err != nil {
 				log.Printf("%+v", err)
-				return
+				return false
 			}
 
 			if len(s) > 5 {
@@ -118,7 +118,7 @@ func gatherGpsData() {
 					t, l, lat, lon, err = parseRMC(s)
 					if err != nil {
 						log.Printf("%+v|%+s", err, s)
-						return
+						return false
 					}
 
 					// keep values
@@ -135,7 +135,7 @@ func gatherGpsData() {
 					q, n, h, err = parseGGA(s)
 					if err != nil {
 						log.Printf("%+v|%+s", err, s)
-						return
+						return false
 					}
 
 					// keep values
@@ -155,12 +155,14 @@ func gatherGpsData() {
 					err = setSystemTime(newgpsdata.getTime())
 					if err != nil {
 						log.Printf("%+v", err)
+						return false
 					}
 				}
-				return
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func main() {
@@ -194,17 +196,28 @@ func main() {
 		log.Fatalf("%+v", err)
 	}
 
-	// prime data
-	q1 := scheduleOnce(func() {
-		gatherGpsData()
-	}, 0)
-	defer close(q1)
+	// create a task that fires every 30 secs until we get the first reading
+	// then use config.GPSDevice.PollRate
+	quit := make(chan bool)
+	go func() {
+		startup := true
+		ticker := time.NewTicker(30 * time.Second)
 
-	// and create recurring task
-	q2 := scheduleRecurring(func() {
-		gatherGpsData()
-	}, config.GPSDevice.PollRate*time.Second)
-	defer close(q2)
+		for {
+			select {
+			case <-ticker.C:
+				if gatherGpsData() && startup {
+					ticker.Stop()
+					ticker = time.NewTicker(config.GPSDevice.PollRate * time.Second)
+					startup = false
+				}
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+	defer close(quit)
 
 	// returns on exit
 	err = systemTray()
