@@ -276,6 +276,25 @@ func systemTray() error {
 		return err
 	}
 
+	// update now action in context menu
+	updateAction := walk.NewAction()
+	err = updateAction.SetText("Update now")
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
+	}
+	updateAction.Triggered().Attach(func() {
+		updated := gatherGpsData()
+		if !updated {
+			log.Printf("updateAction: failed to update")
+		}
+	})
+	err = ni.ContextMenu().Actions().Add(updateAction)
+	if err != nil {
+		log.Printf("%+v", err)
+		return err
+	}
+
 	// exit action in context menu
 	exitAction := walk.NewAction()
 	err = exitAction.SetText("Exit")
