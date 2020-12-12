@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// parseRMCTime extracts the time from an **RMC line
+// parseRMCTime extracts the time from an **RMC line.
 func parseRMCTime(fields []string) (time.Time, error) {
 	d := fields[9]
 
@@ -62,7 +62,7 @@ func parseRMCTime(fields []string) (time.Time, error) {
 	return time.Date(year, time.Month(mon), day, hour, min, sec, msec*1000000, time.UTC), nil
 }
 
-// parseDegMinToFloat parses NMEA format of (d)ddmm.mmmm to decimal degrees
+// parseDegMinToFloat parses NMEA format of (d)ddmm.mmmm to decimal degrees.
 func parseDegMinToFloat(dm string) (float64, error) {
 	// handle latitude (0-90) or longitude (0-180) degrees
 	t := strings.Split(dm, ".")
@@ -93,7 +93,7 @@ func parseDegMinToFloat(dm string) (float64, error) {
 	return degrees + minutes/60, nil
 }
 
-// latLonToGridsquare converts decimal latitude & longitude to a maidenhead gridsquare
+// latLonToGridsquare converts decimal latitude & longitude to a maidenhead gridsquare.
 func latLonToGridsquare(lat, lon float64) (string, error) {
 	upper := []rune("ABCDEFGHIJKLMNOPQRSTUVWX")
 	lower := []rune("abcdefghijklmnopqrstuvwx")
@@ -116,7 +116,7 @@ func latLonToGridsquare(lat, lon float64) (string, error) {
 	), nil
 }
 
-// parseRMC extracts the time, maidenhead gridsquare, latitude, and longitude from an **RMC line
+// parseRMC extracts the time, maidenhead gridsquare, latitude, and longitude from an **RMC line.
 func parseRMC(s string) (time.Time, string, float64, float64, error) {
 	// parse comma delimted records to fields
 	r := csv.NewReader(strings.NewReader(s))
@@ -148,7 +148,7 @@ func parseRMC(s string) (time.Time, string, float64, float64, error) {
 	if fmt.Sprintf("%X", checksum) != strings.TrimSpace(strchk[1]) {
 		err := fmt.Errorf("RMC line bad checksum")
 		log.Printf("%+v", err)
-		//fmt.Printf("%X ", checksum)
+		// fmt.Printf("%X ", checksum)
 		return time.Time{}, "", 0.0, 0.0, err
 	}
 

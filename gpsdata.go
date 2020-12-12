@@ -9,7 +9,7 @@ import (
 )
 
 // our type
-// gpsData is a structure to control concurrent access to the data from the gps device
+// gpsData is a structure to control concurrent access to the data from the gps device.
 type gpsData struct {
 	s   string
 	tm  time.Time
@@ -22,7 +22,7 @@ type gpsData struct {
 	mu  sync.RWMutex
 }
 
-// newGPSData is for initializing a new gpsData
+// newGPSData is for initializing a new gpsData.
 func newGPSData() *gpsData {
 	return &gpsData{
 		lat: -91.0,
@@ -32,7 +32,7 @@ func newGPSData() *gpsData {
 	}
 }
 
-// copy duplicate values from new
+// copy duplicate values from new.
 func (g *gpsData) copy(new *gpsData) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -47,7 +47,7 @@ func (g *gpsData) copy(new *gpsData) {
 	g.h = new.h
 }
 
-// getStatus returns the status
+// getStatus returns the status.
 func (g *gpsData) getStatus() string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -55,7 +55,7 @@ func (g *gpsData) getStatus() string {
 	return g.s
 }
 
-//setStatus sets the status
+//setStatus sets the status.
 func (g *gpsData) setStatus(s string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -63,7 +63,7 @@ func (g *gpsData) setStatus(s string) {
 	g.s = s
 }
 
-// formatStatus returns a string representation of status to show user
+// formatStatus returns a string representation of status to show user.
 func (g *gpsData) formatStatus() string {
 	s := g.getStatus()
 
@@ -73,7 +73,7 @@ func (g *gpsData) formatStatus() string {
 	return strings.ToUpper(s[0:1]) + s[1:]
 }
 
-// getTime returns the time
+// getTime returns the time.
 func (g *gpsData) getTime() time.Time {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -81,7 +81,7 @@ func (g *gpsData) getTime() time.Time {
 	return g.tm
 }
 
-// setTime sets the time
+// setTime sets the time.
 func (g *gpsData) setTime(t time.Time) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -89,7 +89,7 @@ func (g *gpsData) setTime(t time.Time) {
 	g.tm = t
 }
 
-// formatTime returns a string representation of time to show user
+// formatTime returns a string representation of time to show user.
 func (g *gpsData) formatTime() string {
 	tm := g.getTime()
 
@@ -99,7 +99,7 @@ func (g *gpsData) formatTime() string {
 	return ""
 }
 
-// getLocation returns the gridsquare
+// getLocation returns the gridsquare.
 func (g *gpsData) getGridsquare() string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -107,7 +107,7 @@ func (g *gpsData) getGridsquare() string {
 	return g.loc
 }
 
-// setLocation sets the gridsquare
+// setLocation sets the gridsquare.
 func (g *gpsData) setGridsquare(l string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -115,12 +115,12 @@ func (g *gpsData) setGridsquare(l string) {
 	g.loc = l
 }
 
-// formatGridsquare returns a string representation of location as a gridsquare to show user
+// formatGridsquare returns a string representation of location as a gridsquare to show user.
 func (g *gpsData) formatGridsquare() string {
 	return g.getGridsquare()
 }
 
-// getLatitude returns the latitude
+// getLatitude returns the latitude.
 func (g *gpsData) getLatitude() float64 {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -128,7 +128,7 @@ func (g *gpsData) getLatitude() float64 {
 	return g.lat
 }
 
-// setLatitude sets the latitude
+// setLatitude sets the latitude.
 func (g *gpsData) setLatitude(l float64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -136,7 +136,7 @@ func (g *gpsData) setLatitude(l float64) {
 	g.lat = l
 }
 
-// formatLatitude returns a string representation of the latitude to show user
+// formatLatitude returns a string representation of the latitude to show user.
 func (g *gpsData) formatLatitude() string {
 	lat := g.getLatitude()
 
@@ -146,7 +146,7 @@ func (g *gpsData) formatLatitude() string {
 	return ""
 }
 
-// getLongitude returns the longitude
+// getLongitude returns the longitude.
 func (g *gpsData) getLongitude() float64 {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -154,7 +154,7 @@ func (g *gpsData) getLongitude() float64 {
 	return g.lon
 }
 
-// setLongitude sets the longitude
+// setLongitude sets the longitude.
 func (g *gpsData) setLongitude(l float64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -162,7 +162,7 @@ func (g *gpsData) setLongitude(l float64) {
 	g.lon = l
 }
 
-// formatLongitude returns a string representation of the longitude to show user
+// formatLongitude returns a string representation of the longitude to show user.
 func (g *gpsData) formatLongitude() string {
 	lon := g.getLongitude()
 
@@ -172,7 +172,7 @@ func (g *gpsData) formatLongitude() string {
 	return ""
 }
 
-// getFixQuality returns the fix quality
+// getFixQuality returns the fix quality.
 func (g *gpsData) getFixQuality() string {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -180,7 +180,7 @@ func (g *gpsData) getFixQuality() string {
 	return g.q
 }
 
-// setFixQuality sets the fix quality
+// setFixQuality sets the fix quality.
 func (g *gpsData) setFixQuality(q string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -188,12 +188,12 @@ func (g *gpsData) setFixQuality(q string) {
 	g.q = q
 }
 
-// formatFixQuality returns a string representation of the fixquality to show user
+// formatFixQuality returns a string representation of the fixquality to show user.
 func (g *gpsData) formatFixQuality() string {
 	return g.getFixQuality()
 }
 
-// getNumSatellites returns the number of satellites
+// getNumSatellites returns the number of satellites.
 func (g *gpsData) getNumSatellites() int {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -201,7 +201,7 @@ func (g *gpsData) getNumSatellites() int {
 	return g.n
 }
 
-// setNumSatellites sets the number of satellites
+// setNumSatellites sets the number of satellites.
 func (g *gpsData) setNumSatellites(n int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -209,7 +209,7 @@ func (g *gpsData) setNumSatellites(n int) {
 	g.n = n
 }
 
-// formatNumSatellites returns a string representation of the number of satellites to show user
+// formatNumSatellites returns a string representation of the number of satellites to show user.
 func (g *gpsData) formatNumSatellites() string {
 	n := g.getNumSatellites()
 
@@ -219,7 +219,7 @@ func (g *gpsData) formatNumSatellites() string {
 	return ""
 }
 
-// getHDOP returns the horizontal dilution of precision
+// getHDOP returns the horizontal dilution of precision.
 func (g *gpsData) getHDOP() float64 {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
@@ -227,7 +227,7 @@ func (g *gpsData) getHDOP() float64 {
 	return g.h
 }
 
-// setHDOP sets the horizontal dilution of precision
+// setHDOP sets the horizontal dilution of precision.
 func (g *gpsData) setHDOP(h float64) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -235,7 +235,7 @@ func (g *gpsData) setHDOP(h float64) {
 	g.h = h
 }
 
-// formatHDOP returns a string representation of the horizontal dilution of precision to show user
+// formatHDOP returns a string representation of the horizontal dilution of precision to show user.
 func (g *gpsData) formatHDOP() string {
 	h := g.getHDOP()
 

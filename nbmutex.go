@@ -1,18 +1,18 @@
 package main
 
-// our type
+// our type.
 type NonBlockingMutex struct {
 	c chan struct{}
 }
 
-// NewNonBlockingMutex initializes a new NonBlockingMutex
+// NewNonBlockingMutex initializes a new NonBlockingMutex.
 func NewNonBlockingMutex() *NonBlockingMutex {
 	return &NonBlockingMutex{
 		c: make(chan struct{}, 1),
 	}
 }
 
-// Lock attempts to acquire a lock, returns true on success
+// Lock attempts to acquire a lock, returns true on success.
 func (tm NonBlockingMutex) Lock() bool {
 	select {
 	case tm.c <- struct{}{}:
@@ -22,7 +22,7 @@ func (tm NonBlockingMutex) Lock() bool {
 	}
 }
 
-// Unlock releases the lock
+// Unlock releases the lock.
 func (tm NonBlockingMutex) Unlock() {
 	select {
 	case <-tm.c:

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// parseGGA extracts the fix quality, number of satellites, and horizontal dilution of precision being tracked from a **GGA line
+// parseGGA extracts the fix quality, number of satellites, and horizontal dilution of precision being tracked from a **GGA line.
 func parseGGA(s string) (string, int, float64, error) {
 	// parse comma delimted records to fields
 	r := csv.NewReader(strings.NewReader(s))

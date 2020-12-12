@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// configuration holds the application configuration
+// configuration holds the application configuration.
 type configuration struct {
 	GPSDevice struct {
 		Port     string
@@ -22,18 +22,18 @@ type configuration struct {
 }
 
 var (
-	// application configuration
+	// application configuration.
 	config configuration
 
-	// last data from gps device
+	// last data from gps device.
 	gpsdata = newGPSData()
 
-	// prevent concurrent processing of gps data
+	// prevent concurrent processing of gps data.
 	nbmGatherGpsData = NewNonBlockingMutex()
 )
 
 // readLineFromPort reads bytes from port and accumulates string until delim is met
-// does not return delim in string
+// does not return delim in string.
 func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 	var s string
 	buf := []byte{0}
@@ -55,7 +55,7 @@ func readLineFromPort(p *serial.Port, delim byte) (string, error) {
 }
 
 // gatherGpsData reads from gps port until **RMC & **GGA lines are successfully processed
-// system time is updated as long as the quality of the gps signal is good enough (HDOP < 5)
+// system time is updated as long as the quality of the gps signal is good enough (HDOP < 5).
 func gatherGpsData() bool {
 	if nbmGatherGpsData.Lock() {
 		defer nbmGatherGpsData.Unlock()
@@ -157,8 +157,8 @@ func gatherGpsData() bool {
 						log.Printf("%+v", err)
 						return false
 					}
+					return true
 				}
-				return true
 			}
 		}
 	}

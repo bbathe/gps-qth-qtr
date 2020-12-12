@@ -152,7 +152,7 @@ func newStatusTableDataModel() *statusTableDataModel {
 
 	m.items = append(m.items, &statusTableData{
 		Index: 4,
-		Name:  "Time",
+		Name:  "Last Update",
 		Value: gpsdata.formatTime(),
 	})
 
@@ -200,7 +200,7 @@ func systemTray() error {
 	var err error
 
 	// load appIcon
-	appIcon, err = walk.Resources.Icon("3")
+	appIcon, err = walk.Resources.Icon("2")
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
